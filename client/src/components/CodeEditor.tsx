@@ -1,139 +1,108 @@
-import { useEffect, useRef, useState } from "react";
-import * as monaco from "monaco-editor";
-import { saveFileContent } from "@/lib/firebase";
-import { getFileLanguage } from "@/lib/utils";
+import { useEffect, useRef } from 'react';
+import * as monaco from 'monaco-editor';
+import { useResizeObserver } from '../hooks/use-resize-observer';
+import { debounce } from '../lib/utils';
 
 interface CodeEditorProps {
-  userId: string;
-  file: {
-    id: string;
-    name: string;
-    content: string;
-  } | null;
+  value: string;
+  onChange: (value: string) => void;
+  language?: string;
 }
 
-export default function CodeEditor({ userId, file }: CodeEditorProps) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const [editor, setEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+export default function CodeEditor({ value, onChange, language = 'python' }: CodeEditorProps) {
+  const editorContainerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
-  // Initialize Monaco Editor
+  // Initialize editor on mount
   useEffect(() => {
-    if (!editorRef.current) return;
-
-    // Configure Monaco theme
-    monaco.editor.defineTheme("devhub-dark", {
-      base: "vs-dark",
+    if (!editorContainerRef.current) return;
+    
+    // Configure Monaco editor with dark theme
+    monaco.editor.defineTheme('devhub-dark', {
+      base: 'vs-dark',
       inherit: true,
       rules: [
-        { token: "comment", foreground: "#8b949e" },
-        { token: "keyword", foreground: "#ff7b72" },
-        { token: "string", foreground: "#a5d6ff" },
-        { token: "identifier", foreground: "#c9d1d9" },
-        { token: "type", foreground: "#ffa657" },
-        { token: "number", foreground: "#79c0ff" },
+        { token: 'comment', foreground: '6A9955' },
+        { token: 'keyword', foreground: '569CD6' },
+        { token: 'string', foreground: 'CE9178' },
+        { token: 'number', foreground: 'B5CEA8' },
+        { token: 'function', foreground: 'DCDCAA' },
       ],
       colors: {
-        "editor.background": "#0d1117",
-        "editor.foreground": "#c9d1d9",
-        "editorLineNumber.foreground": "#6e7681",
-        "editorLineNumber.activeForeground": "#c9d1d9",
-        "editor.selectionBackground": "#3f4451",
-        "editor.inactiveSelectionBackground": "#3a3d41",
-        "editorCursor.foreground": "#c9d1d9",
-        "editor.lineHighlightBackground": "#161b22",
-        "editorIndentGuide.background": "#30363d",
-        "editorIndentGuide.activeBackground": "#40464d",
+        'editor.background': '#0d1117',
+        'editor.foreground': '#c9d1d9',
+        'editorLineNumber.foreground': '#6e7681',
+        'editorCursor.foreground': '#c9d1d9',
+        'editor.selectionBackground': '#264f78',
+        'editor.inactiveSelectionBackground': '#3a3d41',
+        'editorIndentGuide.background': '#30363d',
+        'editorIndentGuide.activeBackground': '#6e7681',
       },
     });
 
     // Create editor instance
-    const newEditor = monaco.editor.create(editorRef.current, {
-      value: file?.content || "# Write your code here",
-      language: "python",
-      theme: "devhub-dark",
+    editorRef.current = monaco.editor.create(editorContainerRef.current, {
+      value,
+      language,
+      theme: 'devhub-dark',
       automaticLayout: true,
-      fontSize: 14,
-      fontFamily: "'Source Code Pro', monospace",
-      lineNumbers: "on",
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
-      renderLineHighlight: "all",
-      renderIndentGuides: true,
+      renderLineHighlight: 'all',
+      fontFamily: '"Source Code Pro", monospace',
+      fontSize: 14,
       tabSize: 4,
       insertSpaces: true,
-      wordWrap: "on",
-      rulers: [],
+      wordWrap: 'on',
+      lineNumbers: 'on',
+      glyphMargin: false,
+      folding: true,
+      lineDecorationsWidth: 7,
+      lineNumbersMinChars: 3,
     });
 
-    setEditor(newEditor);
+    // Set up change event handler with debounce
+    const debouncedOnChange = debounce((newValue: string) => {
+      onChange(newValue);
+    }, 1000);
 
-    // Cleanup on unmount
+    // Listen for content changes
+    editorRef.current.onDidChangeModelContent(() => {
+      const newValue = editorRef.current?.getValue() || '';
+      debouncedOnChange(newValue);
+    });
+
     return () => {
-      newEditor.dispose();
+      if (editorRef.current) {
+        editorRef.current.dispose();
+        editorRef.current = null;
+      }
     };
   }, []);
 
-  // Update editor content when file changes
+  // Update value when prop changes
   useEffect(() => {
-    if (editor && file) {
-      // Only update if the model value is different
-      const currentValue = editor.getValue();
-      if (currentValue !== file.content) {
-        editor.setValue(file.content);
-      }
-
-      // Update language
-      const fileLanguage = getFileLanguage(file.name);
-      monaco.editor.setModelLanguage(editor.getModel()!, fileLanguage);
+    if (editorRef.current && value !== editorRef.current.getValue()) {
+      editorRef.current.setValue(value);
     }
-  }, [editor, file]);
+  }, [value]);
 
-  // Set up content change handler for auto-save
+  // Update language when it changes
   useEffect(() => {
-    if (!editor || !file) return;
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
+      if (model) {
+        monaco.editor.setModelLanguage(model, language);
+      }
+    }
+  }, [language]);
 
-    const changeModelListener = editor.onDidChangeModelContent(() => {
-      const content = editor.getValue();
-      setIsSaving(true);
-      saveFileContent(userId, file.id, content);
-      
-      // Reset the saving state after a short delay
-      setTimeout(() => {
-        setIsSaving(false);
-      }, 1500);
-    });
+  // Create a resize observer to handle editor layout changes
+  useResizeObserver(editorContainerRef, () => {
+    if (editorRef.current) {
+      editorRef.current.layout();
+    }
+  });
 
-    return () => {
-      changeModelListener.dispose();
-    };
-  }, [editor, file, userId]);
-
-  if (!file) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#0d1117] text-[#8b949e]">
-        <div className="text-center">
-          <p className="mb-2">No file selected</p>
-          <p className="text-sm">Select a file from the explorer or create a new one</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-1 flex flex-col h-full">
-      {/* Tabs */}
-      <div className="bg-[#010409] border-b border-[#30363d] flex h-9">
-        <div className="flex items-center h-full px-3 border-r border-[#30363d] bg-[#0d1117] text-[#58a6ff]">
-          <span className="text-sm whitespace-nowrap">{file.name}</span>
-          {isSaving && (
-            <div className="ml-2 h-2 w-2 rounded-full bg-[#e3b341]"></div>
-          )}
-        </div>
-      </div>
-      
-      {/* Editor */}
-      <div ref={editorRef} className="flex-1"></div>
-    </div>
-  );
+  return <div ref={editorContainerRef} className="h-full w-full" />;
 }
