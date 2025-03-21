@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Share2, UserPlus, Check, Loader2 } from 'lucide-react';
-import { getDatabase, ref, set, get, query, orderByChild, equalTo } from 'firebase/database';
+import { getDatabase, ref, set, get, query, orderByChild, equalTo, onValue } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { FileData, getUserByEmail } from '../lib/firebase';
 import { auth } from '../main';
