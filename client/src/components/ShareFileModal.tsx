@@ -22,18 +22,30 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const usersRef = ref(database, 'users');
-      const snapshot = await get(usersRef);
-      if (snapshot.exists()) {
-        const usersData = Object.values(snapshot.val()) as Array<{ email: string }>;
-        setUsers(usersData.filter(user => user.email !== getAuth().currentUser?.email));
+      try {
+        const usersRef = ref(database, 'users');
+        const snapshot = await get(usersRef);
+        if (snapshot.exists()) {
+          const usersData = [];
+          snapshot.forEach((childSnapshot) => {
+            const userData = childSnapshot.val();
+            if (userData.email && userData.email !== auth.currentUser?.email) {
+              usersData.push({ email: userData.email });
+            }
+          });
+          setUsers(usersData);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
       }
     };
     fetchUsers();
   }, []);
 
   const handleUserSelect = (selectedEmail: string) => {
-    setEmail(selectedEmail);
+    if (selectedEmail) {
+      setEmail(selectedEmail);
+    }
   };
 
   useEffect(() => {
