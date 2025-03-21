@@ -17,6 +17,7 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
   const [users, setUsers] = useState<Array<{ email: string }>>([]);
   const database = getDatabase();
 
@@ -24,17 +25,18 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
     const fetchUsers = async () => {
       try {
         const usersRef = ref(database, 'users');
-        const snapshot = await get(usersRef);
-        if (snapshot.exists()) {
-          const usersData = [];
-          snapshot.forEach((childSnapshot) => {
-            const userData = childSnapshot.val();
-            if (userData.email && userData.email !== auth.currentUser?.email) {
-              usersData.push({ email: userData.email });
-            }
-          });
-          setUsers(usersData);
-        }
+        onValue(usersRef, (snapshot) => {
+          if (snapshot.exists()) {
+            const usersData: Array<{ email: string }> = [];
+            snapshot.forEach((childSnapshot) => {
+              const userData = childSnapshot.val();
+              if (userData.email && userData.email !== auth.currentUser?.email) {
+                usersData.push({ email: userData.email });
+              }
+            });
+            setUsers(usersData);
+          }
+        });
       } catch (error) {
         console.error('Error fetching users:', error);
       }
