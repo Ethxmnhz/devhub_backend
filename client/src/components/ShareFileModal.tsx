@@ -79,22 +79,22 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
     setSuccess(null);
 
     try {
-      // First, try to find the user with this email
-      // Query users by email directly
-      const usersRef = ref(database, 'users');
-      const emailQuery = query(usersRef, orderByChild('email'), equalTo(email));
-      const snapshot = await get(emailQuery);
+      // Use the getUserByEmail helper function
+      const user = await getUserByEmail(email);
 
-      if (!snapshot.exists()) {
+      if (!user) {
         setError('User with this email not found. Please verify the email address.');
         setIsSharing(false);
         return;
       }
 
-      // Get the first (and should be only) user with this email
-      const userEntries = Object.entries(snapshot.val());
-      const [targetUserId, userData] = userEntries[0];
+      const targetUserId = user.userId;
 
+      if (!targetUserId) {
+        setError('Could not find user ID');
+        setIsSharing(false);
+        return;
+      }
 
       // Store collaboration info
       await set(ref(database, `collaborations/${file.id}/users/${email}`), {
