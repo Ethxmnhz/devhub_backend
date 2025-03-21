@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { X, Share2, UserPlus, Check, Loader2 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
 import { getDatabase, ref, set, get } from 'firebase/database';
+
+import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
+
 import { FileData, getUserByEmail } from '../lib/firebase';
 
 interface ShareFileModalProps {
@@ -80,26 +83,20 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
     
     try {
       // First, try to find the user with this email
+      // Query users by email directly
       const usersRef = ref(database, 'users');
-      const snapshot = await get(usersRef);
+      const emailQuery = query(usersRef, orderByChild('email'), equalTo(email));
+      const snapshot = await get(emailQuery);
       
       if (!snapshot.exists()) {
-        setError('No users found in the system');
+        setError('User with this email not found. Please verify the email address.');
         setIsSharing(false);
         return;
       }
       
-      // Check if the user exists
-      let userFound = false;
-      let targetUserId = null;
-      
-      snapshot.forEach((childSnapshot) => {
-        const userData = childSnapshot.val();
-        if (userData.email === email) {
-          userFound = true;
-          targetUserId = childSnapshot.key;
-        }
-      });
+      // Get the first (and should be only) user with this email
+      const userEntries = Object.entries(snapshot.val());
+      const [targetUserId, userData] = userEntries[0];
       
       if (!userFound || !targetUserId) {
         setError('User with this email not found');
