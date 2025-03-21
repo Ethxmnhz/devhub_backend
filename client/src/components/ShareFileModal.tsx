@@ -192,14 +192,16 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-lg shadow-lg w-full max-w-md">
-        <div className="flex justify-between items-center border-b border-gray-800 p-4">
-          <div className="flex items-center">
-            <Share2 className="h-5 w-5 text-blue-400 mr-2" />
-            <h2 className="text-lg font-medium text-gray-100">Share File</h2>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+      <div className="bg-gray-900/95 rounded-xl shadow-2xl w-full max-w-md border border-gray-800">
+        <div className="flex justify-between items-center border-b border-gray-800/50 p-5 bg-gray-900/50">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-500/10">
+              <Share2 className="h-5 w-5 text-blue-400" />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-100">Share File</h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-800/50 text-gray-400 hover:text-white transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
