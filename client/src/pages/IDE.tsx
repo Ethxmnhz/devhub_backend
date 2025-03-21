@@ -252,6 +252,8 @@ export default function IDE() {
                     value={selectedFile.content}
                     onChange={handleFileContentChange}
                     language={selectedFile.name.endsWith('.py') ? 'python' : 'text'}
+                    isShared={selectedFile.isShared}
+                    fileOwner={selectedFile.ownerUserId !== currentUser?.uid ? selectedFile.ownerUserId : undefined}
                   />
                 ) : (
                   <div className="h-full flex items-center justify-center bg-[#0d1117] text-[#8b949e]">

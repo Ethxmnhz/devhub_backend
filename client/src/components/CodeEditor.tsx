@@ -7,9 +7,17 @@ interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   language?: string;
+  isShared?: boolean;
+  fileOwner?: string;
 }
 
-export default function CodeEditor({ value, onChange, language = 'python' }: CodeEditorProps) {
+export default function CodeEditor({ 
+  value, 
+  onChange, 
+  language = 'python',
+  isShared = false,
+  fileOwner
+}: CodeEditorProps) {
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -104,5 +112,15 @@ export default function CodeEditor({ value, onChange, language = 'python' }: Cod
     }
   });
 
-  return <div ref={editorContainerRef} className="h-full w-full" />;
+  return (
+    <div className="h-full w-full flex flex-col">
+      {isShared && (
+        <div className="bg-[#1a237e] text-white text-xs py-1 px-3 flex items-center">
+          <span className="inline-block w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
+          {fileOwner ? `Collaborating with ${fileOwner}'s file` : 'Collaboration Mode'}
+        </div>
+      )}
+      <div ref={editorContainerRef} className="flex-1" />
+    </div>
+  );
 }
