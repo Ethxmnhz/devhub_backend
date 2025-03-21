@@ -22,27 +22,29 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
   const database = getDatabase();
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersRef = ref(database, 'users');
-        onValue(usersRef, (snapshot) => {
-          if (snapshot.exists()) {
-            const usersData: Array<{ email: string }> = [];
-            snapshot.forEach((childSnapshot) => {
-              const userData = childSnapshot.val();
-              if (userData.email && userData.email !== auth.currentUser?.email) {
-                usersData.push({ email: userData.email });
-              }
-            });
-            setUsers(usersData);
-          }
-        });
-      } catch (error) {
+    if (!auth.currentUser) return;
+
+    const fetchUsers = () => {
+      const usersRef = ref(database, 'users');
+      return onValue(usersRef, (snapshot) => {
+        if (snapshot.exists()) {
+          const usersData: Array<{ email: string }> = [];
+          snapshot.forEach((childSnapshot) => {
+            const userData = childSnapshot.val();
+            if (userData.email && userData.email !== auth.currentUser?.email) {
+              usersData.push({ email: userData.email });
+            }
+          });
+          setUsers(usersData);
+        }
+      }, (error) => {
         console.error('Error fetching users:', error);
-      }
+      });
     };
-    fetchUsers();
-  }, []);
+
+    const unsubscribe = fetchUsers();
+    return () => unsubscribe();
+  }, [auth.currentUser]);
 
   const handleUserSelect = (selectedEmail: string) => {
     if (selectedEmail) {
