@@ -16,19 +16,19 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+
   const auth = getAuth();
   const database = getDatabase();
-  
+
   // Fetch existing collaborators when the modal opens
   useEffect(() => {
     const fetchCollaborators = async () => {
       if (!file || !auth.currentUser) return;
-      
+
       try {
         const collaboratorsRef = ref(database, `collaborations/${file.id}/users`);
         const snapshot = await get(collaboratorsRef);
-        
+
         if (snapshot.exists()) {
           const data = snapshot.val();
           // Filter out the current user
@@ -41,7 +41,7 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
         console.error('Error fetching collaborators:', err);
       }
     };
-    
+
     if (isOpen) {
       fetchCollaborators();
     }
@@ -51,63 +51,58 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
 
   const handleAddCollaborator = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim()) {
       setError('Please enter an email address');
       return;
     }
-    
+
     if (!file || !auth.currentUser) {
       setError('You must be logged in to share files');
       return;
     }
-    
+
     // Check if the email is the same as the current user
     if (email === auth.currentUser.email) {
       setError('You cannot share with yourself');
       return;
     }
-    
+
     // Check if email is already in collaborators
     if (collaborators.includes(email)) {
       setError('This user is already a collaborator');
       return;
     }
-    
+
     setIsSharing(true);
     setError(null);
     setSuccess(null);
-    
+
     try {
       // First, try to find the user with this email
       // Query users by email directly
       const usersRef = ref(database, 'users');
       const emailQuery = query(usersRef, orderByChild('email'), equalTo(email));
       const snapshot = await get(emailQuery);
-      
+
       if (!snapshot.exists()) {
         setError('User with this email not found. Please verify the email address.');
         setIsSharing(false);
         return;
       }
-      
+
       // Get the first (and should be only) user with this email
       const userEntries = Object.entries(snapshot.val());
       const [targetUserId, userData] = userEntries[0];
-      
-      if (!userFound || !targetUserId) {
-        setError('User with this email not found');
-        setIsSharing(false);
-        return;
-      }
-      
+
+
       // Store collaboration info
       await set(ref(database, `collaborations/${file.id}/users/${email}`), {
         userId: targetUserId,
         addedAt: Date.now(),
         addedBy: auth.currentUser.email
       });
-      
+
       // Also add the shared file to the target user's shared files
       await set(ref(database, `users/${targetUserId}/sharedFiles/${file.id}`), {
         fileId: file.id,
@@ -115,7 +110,7 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
         sharedAt: Date.now(),
         ownerId: file.ownerUserId || auth.currentUser.uid
       });
-      
+
       // Update collaborators list
       setCollaborators([...collaborators, email]);
       setEmail('');
@@ -130,32 +125,32 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
 
   const handleRemoveCollaborator = async (collaboratorEmail: string) => {
     if (!file || !auth.currentUser) return;
-    
+
     try {
       // Find the userId for this email
       const usersRef = ref(database, 'users');
       const snapshot = await get(usersRef);
-      
+
       let targetUserId = null;
-      
+
       snapshot.forEach((childSnapshot) => {
         const userData = childSnapshot.val();
         if (userData.email === collaboratorEmail) {
           targetUserId = childSnapshot.key;
         }
       });
-      
+
       if (!targetUserId) {
         setError('Could not find user to remove');
         return;
       }
-      
+
       // Remove collaboration access
       await set(ref(database, `collaborations/${file.id}/users/${collaboratorEmail}`), null);
-      
+
       // Remove from target user's shared files
       await set(ref(database, `users/${targetUserId}/sharedFiles/${file.id}`), null);
-      
+
       // Update collaborators list
       setCollaborators(collaborators.filter(email => email !== collaboratorEmail));
       setSuccess('Collaborator removed successfully');
@@ -177,25 +172,25 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
             <X className="h-5 w-5" />
           </button>
         </div>
-        
+
         <div className="p-4">
           <div className="mb-4">
             <p className="text-sm text-gray-300 mb-1">Sharing: <span className="text-blue-400">{file.name}</span></p>
             <p className="text-xs text-gray-500">Collaborators will be able to edit this file in real-time</p>
           </div>
-          
+
           {error && (
             <div className="mb-4 p-2 bg-red-900 bg-opacity-20 border border-red-800 text-red-400 rounded text-sm">
               {error}
             </div>
           )}
-          
+
           {success && (
             <div className="mb-4 p-2 bg-green-900 bg-opacity-20 border border-green-800 text-green-400 rounded text-sm">
               {success}
             </div>
           )}
-          
+
           <form onSubmit={handleAddCollaborator} className="mb-4">
             <label className="block text-gray-300 text-sm font-medium mb-2">
               Add Collaborator
@@ -223,7 +218,7 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
               </button>
             </div>
           </form>
-          
+
           {collaborators.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-300 mb-2">Current Collaborators</h3>
@@ -247,7 +242,7 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
             </div>
           )}
         </div>
-        
+
         <div className="flex justify-end p-4 border-t border-gray-800">
           <button
             type="button"
