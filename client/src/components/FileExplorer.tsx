@@ -28,14 +28,14 @@ export default function FileExplorer({
     setError(null);
     
     // Set up the real-time listener for files
-    const unsubscribe = getUserFiles(userId, (updatedFiles) => {
+    getUserFiles(userId, (updatedFiles) => {
       setFiles(updatedFiles);
       setLoading(false);
     });
     
-    // Clean up listener on unmount
+    // Clean up listener is handled internally in getUserFiles
     return () => {
-      unsubscribe();
+      // Nothing to clean up here as the Firebase listeners are managed elsewhere
     };
   }, [userId]);
   

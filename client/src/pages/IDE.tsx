@@ -10,15 +10,8 @@ import Terminal from "@/components/Terminal";
 import { useToast } from "@/hooks/use-toast";
 import { Play, Loader2, Save, Plus, Folder, FileText } from "lucide-react";
 import { executePythonCode } from "@/lib/pythonService";
-
-// Define file data structure
-export interface FileData {
-  id: string;
-  name: string;
-  content: string;
-  createdAt: number;
-  updatedAt: number;
-}
+import { FileData } from "../lib/firebase";
+import NewFileModal from "@/components/NewFileModal";
 
 export default function IDE() {
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
@@ -65,11 +58,13 @@ export default function IDE() {
   const createNewFile = async (name: string, content = '') => {
     if (!currentUser) return;
     
-    const newFile: Omit<FileData, 'id'> = {
+    const newFile = {
       name,
       content,
-      createdAt: Date.now(),
-      updatedAt: Date.now()
+      path: '/',
+      type: 'file' as const,
+      lastModified: Date.now(),
+      createdAt: Date.now()
     };
     
     const filesRef = dbRef(database, `users/${currentUser.uid}/files`);
@@ -89,7 +84,7 @@ export default function IDE() {
     setSelectedFile({
       ...selectedFile,
       content,
-      updatedAt: Date.now()
+      lastModified: Date.now()
     });
   };
 
@@ -103,8 +98,10 @@ export default function IDE() {
       await set(fileRef, {
         name: selectedFile.name,
         content: selectedFile.content,
+        path: selectedFile.path,
+        type: selectedFile.type,
         createdAt: selectedFile.createdAt,
-        updatedAt: Date.now()
+        lastModified: Date.now()
       });
       
       toast({
@@ -222,55 +219,14 @@ export default function IDE() {
         <ResizablePanelGroup direction="horizontal">
           {/* File Explorer */}
           <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="bg-[#0d1117]">
-            <div className="h-full flex flex-col">
-              <div className="flex justify-between items-center p-3 border-b border-[#30363d]">
-                <h2 className="font-medium">Files</h2>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setIsCreatingFile(true)}
-                  className="h-7 w-7 rounded-sm hover:bg-[#30363d]"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              {/* File Creation Input */}
-              {isCreatingFile && (
-                <div className="p-2 border-b border-[#30363d]">
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={newFileName}
-                      onChange={(e) => setNewFileName(e.target.value)}
-                      placeholder="filename.py"
-                      className="flex-1 bg-[#0d1117] border border-[#30363d] rounded-l-sm p-1 text-sm focus:outline-none focus:border-[#58a6ff]"
-                    />
-                    <Button 
-                      onClick={handleCreateFile}
-                      size="sm"
-                      className="rounded-l-none bg-[#238636] hover:bg-[#2ea043]"
-                    >
-                      Create
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              {/* File List */}
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
-                {files.map((file) => (
-                  <div 
-                    key={file.id}
-                    onClick={() => setSelectedFile(file)}
-                    className={`flex items-center p-2 cursor-pointer hover:bg-[#161b22] ${selectedFile?.id === file.id ? 'bg-[#161b22]' : ''}`}
-                  >
-                    <FileText className="h-4 w-4 mr-2 text-[#8b949e]" />
-                    <span className="truncate">{file.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {currentUser && (
+              <FileExplorer 
+                userId={currentUser.uid}
+                onFileSelect={setSelectedFile}
+                onCreateFileClick={() => setIsCreatingFile(true)}
+                selectedFileId={selectedFile?.id || null}
+              />
+            )}
           </ResizablePanel>
           
           <ResizableHandle className="w-[1px] bg-[#30363d]" />
@@ -296,7 +252,7 @@ export default function IDE() {
               
               {/* Terminal Output */}
               <ResizablePanel defaultSize={30}>
-                <Terminal output={output} />
+                <Terminal pythonOutput={output} executing={isRunning} />
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
@@ -314,6 +270,15 @@ export default function IDE() {
         </div>
         <div>DevHub IDE | {new Date().toLocaleTimeString()}</div>
       </footer>
+
+      {/* New File Modal */}
+      {isCreatingFile && currentUser && (
+        <NewFileModal
+          userId={currentUser.uid}
+          isOpen={isCreatingFile}
+          onClose={() => setIsCreatingFile(false)}
+        />
+      )}
     </div>
   );
 }
