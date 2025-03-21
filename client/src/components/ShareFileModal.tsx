@@ -17,7 +17,7 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [email, setEmail] = useState('');
+  const [emailInput, setEmailInput] = useState('');
   const [users, setUsers] = useState<Array<{ email: string }>>([]);
   const database = getDatabase();
 
