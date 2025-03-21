@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-[#0d1117] text-[#c9d1d9];
+  }
+
+  .font-code {
+    font-family: 'Source Code Pro', monospace;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-[#0d1117];
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-[#30363d] rounded-sm;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-[#6e7681];
+  }
+
+  .panel-divider {
+    @apply cursor-col-resize w-[1px] bg-[#30363d] relative;
+  }
+  
+  .panel-divider:hover,
+  .panel-divider:active {
+    @apply bg-[#58a6ff] w-[2px];
+  }
+  
+  .panel-divider::after {
+    content: "";
+    @apply absolute top-0 -left-[3px] w-[7px] h-full cursor-col-resize;
+  }
+  
+  .horizontal-divider {
+    @apply cursor-row-resize h-[1px] w-full bg-[#30363d] relative;
+  }
+  
+  .horizontal-divider:hover,
+  .horizontal-divider:active {
+    @apply bg-[#58a6ff] h-[2px];
+  }
+  
+  .horizontal-divider::after {
+    content: "";
+    @apply absolute -top-[3px] left-0 h-[7px] w-full cursor-row-resize;
+  }
+
+  /* Terminal styles */
+  .terminal-prompt::before {
+    content: "$ ";
+    @apply text-[#8b949e];
+  }
+  
+  .terminal-output-line {
+    @apply whitespace-pre-wrap break-all;
+  }
+}
