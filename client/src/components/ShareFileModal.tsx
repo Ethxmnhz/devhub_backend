@@ -16,11 +16,25 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  const auth = getAuth();
+  const [users, setUsers] = useState<Array<{ email: string }>>([]);
   const database = getDatabase();
 
-  // Fetch existing collaborators when the modal opens
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const usersRef = ref(database, 'users');
+      const snapshot = await get(usersRef);
+      if (snapshot.exists()) {
+        const usersData = Object.values(snapshot.val()) as Array<{ email: string }>;
+        setUsers(usersData.filter(user => user.email !== getAuth().currentUser?.email));
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const handleUserSelect = (selectedEmail: string) => {
+    setEmail(selectedEmail);
+  };
+
   useEffect(() => {
     const fetchCollaborators = async () => {
       if (!file || !auth.currentUser) return;
@@ -217,6 +231,19 @@ export default function ShareFileModal({ file, isOpen, onClose }: ShareFileModal
                 )}
               </button>
             </div>
+            {users.length > 0 && (
+              <div className="mt-2 border rounded-md border-[#30363d] max-h-32 overflow-y-auto">
+                {users.map((user, index) => (
+                  <button
+                    key={index}
+                    className="w-full text-left px-3 py-2 hover:bg-[#30363d] text-sm"
+                    onClick={() => handleUserSelect(user.email)}
+                  >
+                    {user.email}
+                  </button>
+                ))}
+              </div>
+            )}
           </form>
 
           {collaborators.length > 0 && (
