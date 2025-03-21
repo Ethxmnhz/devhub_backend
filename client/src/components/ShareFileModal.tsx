@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Share2, UserPlus, Check, Loader2 } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
-import { getDatabase, ref, set, get } from 'firebase/database';
-
-import { ref, get, query, orderByChild, equalTo } from 'firebase/database';
-
+import { getDatabase, ref, set, get, query, orderByChild, equalTo } from 'firebase/database';
 import { FileData, getUserByEmail } from '../lib/firebase';
 
 interface ShareFileModalProps {
