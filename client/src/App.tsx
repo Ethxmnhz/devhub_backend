@@ -1,57 +1,48 @@
-import { Switch, Route, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import NotFound from "@/pages/not-found";
-import IDE from "@/pages/IDE";
-import Login from "@/pages/Login";
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { auth } from "./main";
 import { User, onAuthStateChanged } from "firebase/auth";
 
-function Router() {
+// Loading component
+const LoadingScreen = () => (
+  <div className="h-screen flex items-center justify-center bg-[#0d1117] text-white">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#58a6ff]"></div>
+  </div>
+);
+
+// Auth Wrapper component
+const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [, navigate] = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [, setLocation] = useLocation();
+  const [currentPath] = useLocation();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
       
-      // Redirect based on auth state
-      if (!currentUser) {
-        setLocation('/login');
+      // Redirect if needed
+      if (!currentUser && currentPath !== '/login') {
+        navigate('/login');
+      } else if (currentUser && currentPath === '/login') {
+        navigate('/');
       }
     });
 
     return () => unsubscribe();
-  }, [setLocation]);
+  }, [navigate, currentPath]);
 
   if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-[#0d1117] text-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#58a6ff]"></div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
-  return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/" component={IDE} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+  return <>{children}</>;
+};
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
-    </QueryClientProvider>
-  );
-}
+// App component - this just exports the AuthProvider
+const App = ({ children }: { children: React.ReactNode }) => {
+  return <AuthProvider>{children}</AuthProvider>;
+};
 
 export default App;

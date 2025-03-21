@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
 import { auth } from "../main";
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup 
 } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ export default function Auth({ isLogin = true }: AuthProps) {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [, setLocation] = useLocation();
+  const [isSignUp, setIsSignUp] = useState(!isLogin);
   const { toast } = useToast();
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -32,13 +31,11 @@ export default function Auth({ isLogin = true }: AuthProps) {
     setIsLoading(true);
 
     try {
-      if (isLogin) {
+      if (!isSignUp) {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
       }
-
-      setLocation("/");
     } catch (error: any) {
       console.error("Authentication error:", error);
       toast({
@@ -57,7 +54,6 @@ export default function Auth({ isLogin = true }: AuthProps) {
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      setLocation("/");
     } catch (error: any) {
       console.error("Google authentication error:", error);
       toast({
@@ -71,18 +67,18 @@ export default function Auth({ isLogin = true }: AuthProps) {
   };
 
   const toggleAuthMode = () => {
-    setLocation(isLogin ? "/signup" : "/login");
+    setIsSignUp(!isSignUp);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center login-backdrop bg-black/70 backdrop-blur-sm">
+    <div className="min-h-screen flex items-center justify-center bg-[#0d1117] p-4">
       <Card className="w-full max-w-md bg-[#161b22] border-[#30363d] text-[#c9d1d9]">
         <CardHeader className="space-y-1">
           <CardTitle className="text-xl text-center">
-            {isLogin ? "Sign in to DevHub" : "Create a DevHub Account"}
+            {!isSignUp ? "Sign in to DevHub" : "Create a DevHub Account"}
           </CardTitle>
           <CardDescription className="text-center text-[#8b949e]">
-            {isLogin 
+            {!isSignUp 
               ? "Enter your credentials to access your account" 
               : "Fill in the form below to create your account"}
           </CardDescription>
@@ -114,7 +110,7 @@ export default function Auth({ isLogin = true }: AuthProps) {
               />
             </div>
             
-            {isLogin && (
+            {!isSignUp && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Checkbox 
@@ -138,10 +134,10 @@ export default function Auth({ isLogin = true }: AuthProps) {
               {isLoading ? (
                 <span className="flex items-center justify-center">
                   <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
-                  {isLogin ? "Signing in..." : "Creating account..."}
+                  {!isSignUp ? "Signing in..." : "Creating account..."}
                 </span>
               ) : (
-                isLogin ? "Sign in" : "Create account"
+                !isSignUp ? "Sign in" : "Create account"
               )}
             </Button>
             
@@ -166,7 +162,7 @@ export default function Auth({ isLogin = true }: AuthProps) {
             </Button>
             
             <div className="text-center text-sm text-[#8b949e]">
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              {!isSignUp ? "Don't have an account? " : "Already have an account? "}
               <a
                 href="#"
                 onClick={(e) => {
@@ -175,7 +171,7 @@ export default function Auth({ isLogin = true }: AuthProps) {
                 }}
                 className="text-[#58a6ff] hover:underline"
               >
-                {isLogin ? "Sign up" : "Sign in"}
+                {!isSignUp ? "Sign up" : "Sign in"}
               </a>
             </div>
           </form>
