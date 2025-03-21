@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, FolderPlus, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, FolderPlus, Trash2, RefreshCw, Share2, Users } from 'lucide-react';
 import { FileData, getUserFiles, deleteFile } from '../lib/firebase';
 import { getFileIcon } from '../lib/utils';
 
@@ -130,17 +130,29 @@ export default function FileExplorer({
                 <div className="flex items-center truncate">
                   <span className="mr-1.5">{getFileIcon(file.name)}</span>
                   <span className="truncate">{file.name}</span>
+                  {file.isShared && (
+                    <span className="ml-1.5 text-blue-400" title="Shared with you">
+                      <Users className="h-3 w-3" />
+                    </span>
+                  )}
+                  {file.ownerUserId !== userId && file.isShared && (
+                    <span className="ml-0.5 text-xs text-blue-500">(shared)</span>
+                  )}
                 </div>
-                <button
-                  onClick={(e) => handleDeleteFile(e, file.id)}
-                  className={`
-                    p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-800 
-                    ${selectedFileId === file.id ? 'opacity-100 text-gray-400' : ''}
-                  `}
-                  title="Delete file"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
+                <div className="flex items-center">
+                  {file.ownerUserId === userId && (
+                    <button
+                      onClick={(e) => handleDeleteFile(e, file.id)}
+                      className={`
+                        p-1 rounded opacity-0 hover:opacity-100 hover:bg-red-800
+                        ${selectedFileId === file.id ? 'opacity-100 text-gray-400' : ''}
+                      `}
+                      title="Delete file"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

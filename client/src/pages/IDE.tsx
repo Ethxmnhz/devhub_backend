@@ -199,6 +199,16 @@ export default function IDE() {
                 </>
               )}
             </Button>
+            <Button 
+              size="sm"
+              onClick={() => setIsSharingFile(true)}
+              disabled={!selectedFile} 
+              className="bg-[#8957e5] hover:bg-[#a371f7] text-white"
+              title="Share this file with other users"
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Share
+            </Button>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -279,6 +289,15 @@ export default function IDE() {
           userId={currentUser.uid}
           isOpen={isCreatingFile}
           onClose={() => setIsCreatingFile(false)}
+        />
+      )}
+
+      {/* Share File Modal */}
+      {isSharingFile && selectedFile && currentUser && (
+        <ShareFileModal
+          file={selectedFile}
+          isOpen={isSharingFile}
+          onClose={() => setIsSharingFile(false)}
         />
       )}
     </div>
