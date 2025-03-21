@@ -8,16 +8,18 @@ import CodeEditor from "@/components/CodeEditor";
 import FileExplorer from "@/components/FileExplorer";
 import Terminal from "@/components/Terminal";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Loader2, Save, Plus, Folder, FileText } from "lucide-react";
+import { Play, Loader2, Save, Plus, Folder, FileText, Share2, Users } from "lucide-react";
 import { executePythonCode } from "@/lib/pythonService";
 import { FileData } from "../lib/firebase";
 import NewFileModal from "@/components/NewFileModal";
+import ShareFileModal from "@/components/ShareFileModal";
 
 export default function IDE() {
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
   const [files, setFiles] = useState<FileData[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileData | null>(null);
   const [isCreatingFile, setIsCreatingFile] = useState(false);
+  const [isSharingFile, setIsSharingFile] = useState(false);
   const [newFileName, setNewFileName] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [output, setOutput] = useState("");
