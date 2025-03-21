@@ -42,10 +42,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Store execution log (if a user is authenticated)
-        if (req.session?.userId) {
+        if (req.body.userId) {
           try {
             await storage.createExecutionLog({
-              userId: req.session.userId,
+              userId: req.body.userId,
               fileId: null, // This could be set if we're tracking the file in our DB
               code,
               output: stdout,

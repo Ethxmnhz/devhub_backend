@@ -1,20 +1,7 @@
-import { useState, useEffect } from "react";
-import { FileData, getUserFiles, createFile, deleteFile } from "../lib/firebase";
-import { 
-  Folder, 
-  FileCode, 
-  FileText, 
-  FilePlus, 
-  FolderPlus, 
-  RefreshCw, 
-  MoreVertical, 
-  Trash2 
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
-import { getFileIcon } from "@/lib/utils";
+import { useState, useEffect } from 'react';
+import { Plus, FolderPlus, Trash2, RefreshCw } from 'lucide-react';
+import { FileData, getUserFiles, deleteFile } from '../lib/firebase';
+import { getFileIcon } from '../lib/utils';
 
 interface FileExplorerProps {
   userId: string;
@@ -23,203 +10,142 @@ interface FileExplorerProps {
   selectedFileId: string | null;
 }
 
-export default function FileExplorer({ userId, onFileSelect, onCreateFileClick, selectedFileId }: FileExplorerProps) {
+export default function FileExplorer({ 
+  userId, 
+  onFileSelect, 
+  onCreateFileClick, 
+  selectedFileId 
+}: FileExplorerProps) {
   const [files, setFiles] = useState<FileData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
-
-  // Get user files
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Load user files on component mount and when userId changes
   useEffect(() => {
     if (!userId) return;
-
-    setIsLoading(true);
-    const fetchFiles = () => {
-      getUserFiles(userId, (fetchedFiles) => {
-        setFiles(fetchedFiles);
-        setIsLoading(false);
-      });
-    };
-
-    fetchFiles();
-  }, [userId]);
-
-  // Handle file click
-  const handleFileClick = (file: FileData) => {
-    if (file.type === 'file') {
-      onFileSelect(file);
-    }
-  };
-
-  // Handle file refresh
-  const handleRefresh = () => {
-    setIsLoading(true);
-    getUserFiles(userId, (fetchedFiles) => {
-      setFiles(fetchedFiles);
-      setIsLoading(false);
-    });
-  };
-
-  // Handle new folder
-  const handleNewFolder = async () => {
-    try {
-      const folderName = prompt('Enter folder name:');
-      if (!folderName) return;
-      
-      await createFile(userId, folderName, '', '/', 'folder');
-      toast({
-        title: "Folder Created",
-        description: `Folder '${folderName}' has been created.`
-      });
-    } catch (error) {
-      console.error('Error creating folder:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create folder. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Handle file deletion
-  const handleDeleteFile = async (fileId: string, fileName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
     
-    try {
-      if (confirm(`Are you sure you want to delete '${fileName}'?`)) {
+    setLoading(true);
+    setError(null);
+    
+    // Set up the real-time listener for files
+    const unsubscribe = getUserFiles(userId, (updatedFiles) => {
+      setFiles(updatedFiles);
+      setLoading(false);
+    });
+    
+    // Clean up listener on unmount
+    return () => {
+      unsubscribe();
+    };
+  }, [userId]);
+  
+  // Handle file selection
+  const handleFileClick = (file: FileData) => {
+    onFileSelect(file);
+  };
+  
+  // Handle file deletion
+  const handleDeleteFile = async (e: React.MouseEvent, fileId: string) => {
+    e.stopPropagation(); // Prevent triggering file selection
+    
+    if (window.confirm('Are you sure you want to delete this file?')) {
+      try {
         await deleteFile(userId, fileId);
-        toast({
-          title: "File Deleted",
-          description: `'${fileName}' has been deleted.`
-        });
+        // File list will be updated automatically by the Firebase listener
+      } catch (error) {
+        console.error('Error deleting file:', error);
+        setError('Failed to delete file. Please try again.');
       }
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete file. Please try again.",
-        variant: "destructive"
-      });
     }
   };
-
+  
   return (
-    <aside className="bg-[#010409] border-r border-[#30363d] w-56 flex flex-col h-full">
-      <div className="p-3 border-b border-[#30363d] flex justify-between items-center">
-        <h2 className="font-medium text-sm text-[#c9d1d9]">EXPLORER</h2>
-        <div className="flex space-x-1.5">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-[#8b949e] hover:text-[#c9d1d9] hover:bg-[#161b22]"
-                  onClick={onCreateFileClick}
-                >
-                  <FilePlus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>New File</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-[#8b949e] hover:text-[#c9d1d9] hover:bg-[#161b22]"
-                  onClick={handleNewFolder}
-                >
-                  <FolderPlus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>New Folder</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-[#8b949e] hover:text-[#c9d1d9] hover:bg-[#161b22]"
-                  onClick={handleRefresh}
-                >
-                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Refresh</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+    <div className="h-full flex flex-col bg-gray-900 border-r border-gray-800">
+      <div className="p-3 flex justify-between items-center border-b border-gray-800">
+        <h2 className="text-sm font-medium text-gray-200">Files</h2>
+        <div className="flex space-x-1">
+          <button 
+            onClick={onCreateFileClick}
+            className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+            title="Create new file"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+          <button 
+            className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+            title="Create new folder (coming soon)"
+            disabled
+          >
+            <FolderPlus className="h-4 w-4 opacity-50" />
+          </button>
+          <button 
+            className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition-colors ml-1"
+            onClick={() => setLoading(true)}
+            title="Refresh files"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        {isLoading ? (
-          <div className="flex justify-center py-6">
-            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#58a6ff]"></div>
+      
+      <div className="flex-1 overflow-y-auto p-1">
+        {error && (
+          <div className="p-2 text-xs text-red-400 bg-red-900 bg-opacity-20 rounded mb-2">
+            {error}
+          </div>
+        )}
+        
+        {loading ? (
+          <div className="flex flex-col space-y-2 p-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse flex items-center">
+                <div className="h-4 w-4 bg-gray-700 rounded mr-2"></div>
+                <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+              </div>
+            ))}
           </div>
         ) : files.length === 0 ? (
-          <div className="p-4 text-center text-sm text-[#8b949e]">
-            <p>No files found.</p>
-            <p className="mt-2">Click the + icon to create a file.</p>
+          <div className="p-4 text-center text-gray-500 text-xs">
+            <p>No files yet.</p>
+            <button 
+              onClick={onCreateFileClick}
+              className="mt-2 px-2 py-1 bg-blue-900 text-blue-100 rounded text-xs hover:bg-blue-800 transition-colors"
+            >
+              Create your first file
+            </button>
           </div>
         ) : (
-          <ul className="py-2 px-1 text-sm">
-            {files
-              .sort((a, b) => {
-                // Sort folders first, then files
-                if (a.type === 'folder' && b.type === 'file') return -1;
-                if (a.type === 'file' && b.type === 'folder') return 1;
-                return a.name.localeCompare(b.name);
-              })
-              .map((file) => (
-                <li
-                  key={file.id}
-                  className={`flex items-center px-2 py-1 rounded group cursor-pointer
-                    ${selectedFileId === file.id ? 'bg-[rgba(88,166,255,0.1)] text-[#58a6ff]' : 'hover:bg-[rgba(88,166,255,0.05)]'}`}
-                  onClick={() => handleFileClick(file)}
+          <ul className="space-y-0.5">
+            {files.map((file) => (
+              <li 
+                key={file.id}
+                onClick={() => handleFileClick(file)}
+                className={`
+                  flex items-center justify-between p-1.5 text-xs rounded cursor-pointer
+                  ${selectedFileId === file.id 
+                    ? 'bg-blue-900 bg-opacity-40 text-blue-100' 
+                    : 'hover:bg-gray-800 text-gray-300'}
+                `}
+              >
+                <div className="flex items-center truncate">
+                  <span className="mr-1.5">{getFileIcon(file.name)}</span>
+                  <span className="truncate">{file.name}</span>
+                </div>
+                <button
+                  onClick={(e) => handleDeleteFile(e, file.id)}
+                  className={`
+                    p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-800 
+                    ${selectedFileId === file.id ? 'opacity-100 text-gray-400' : ''}
+                  `}
+                  title="Delete file"
                 >
-                  {getFileIcon(file.name, file.type)}
-                  <span className={selectedFileId === file.id ? 'text-[#58a6ff]' : 'text-[#c9d1d9]'}>
-                    {file.name}
-                  </span>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 ml-auto opacity-0 group-hover:opacity-100 text-[#8b949e] hover:text-[#c9d1d9] hover:bg-[#161b22]"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-[#161b22] border-[#30363d] text-[#c9d1d9]">
-                      <DropdownMenuItem 
-                        className="flex items-center gap-2 text-[#f85149] focus:text-[#f85149] focus:bg-[#0d1117]"
-                        onClick={(e: any) => handleDeleteFile(file.id, file.name, e)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </li>
-              ))}
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </li>
+            ))}
           </ul>
         )}
       </div>
-    </aside>
+    </div>
   );
 }
