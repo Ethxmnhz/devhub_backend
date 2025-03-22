@@ -36,35 +36,32 @@ app.use((req, res, next) => {
   next();
 });
 
+// Wrap in an async function to catch errors
 (async () => {
-  const server = await registerRoutes(app);
+  try {
+    const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      console.error("Server Error:", message);
+      res.status(status).json({ message });
+    });
 
-    res.status(status).json({ message });
-    throw err;
-  });
+    if (app.get("env") === "development") {
+      await setupVite(app, server);
+    } else {
+      serveStatic(app);
+    }
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+    // ✅ Ensure the app listens correctly
+    const port = process.env.PORT || 5000; // ✅ Allow custom port for Render
+    server.listen(port, "0.0.0.0", () => {
+      log(`Server running on port ${port}`);
+    });
+
+  } catch (error) {
+    console.error("❌ Server failed to start:", error);
+    process.exit(1); // Exit process if server fails to start
   }
-
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
 })();
