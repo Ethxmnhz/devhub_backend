@@ -5,13 +5,14 @@
   "license": "MIT",
 "scripts": {
   "build": "npm run build:client && npm run build:server",
-  "build:client": "cd client && npm install && vite build",  
+  "build:client": "cd client && npm install && vite build",
   "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
   "start": "node dist/index.js",
   "dev": "tsx server/index.ts",
   "check": "tsc",
   "db:push": "drizzle-kit push"
 }
+
 
 
 
